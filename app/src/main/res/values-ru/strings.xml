@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Laba1_mobile</string>
+    <string name="element_name">Имя элемента</string>
+    <string name="myname">моё имя</string>
+
+</resources>
