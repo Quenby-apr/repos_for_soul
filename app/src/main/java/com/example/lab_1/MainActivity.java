@@ -1,7 +1,9 @@
 package com.example.lab_1;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.View;
@@ -16,11 +18,14 @@ import com.google.android.material.textfield.TextInputLayout;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class MainActivity extends AppCompatActivity {
     ListView listView;
     Button btnAdd;
-    List<String> names;
+    public static final List<String> names = new ArrayList<String>(Arrays.asList("Курс по русскому", "Курс по математике", "Курс по физике", "Курс по английскому", "Курс по химии", "Курс по информатике"));;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,8 +36,8 @@ public class MainActivity extends AppCompatActivity {
         Button btnSelect = findViewById(R.id.buttonSelect);
         Button btnCancel = findViewById(R.id.buttonCancel);
         Button btnToast = findViewById(R.id.buttonToast);
+        Button btnRemove = findViewById(R.id.buttonRemove);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        names = new ArrayList<>();
 
         ArrayAdapter<String> adapter =new ArrayAdapter(
                 this,
@@ -51,12 +56,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 int size = adapter.getCount();
-                if(!listView.isItemChecked(0))
+                for(int i = 0; i<size; i++)
                 {
-                    for(int i = 0; i<size; i++)
-                    {
-                        listView.setItemChecked(i, true);
-                    }
+                    listView.setItemChecked(i, true);
                 }
                 adapter.notifyDataSetChanged();
             }
@@ -65,12 +67,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 int size = adapter.getCount();
-                if(listView.isItemChecked(0))
+                for(int i = 0; i<size; i++)
                 {
-                    for(int i = 0; i<size; i++)
-                    {
-                        listView.setItemChecked(i, false);
-                    }
+                    listView.setItemChecked(i, false);
                 }
                 adapter.notifyDataSetChanged();
             }
@@ -89,11 +88,52 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), res.toString(), Toast.LENGTH_SHORT).show();
             }
         };
+        View.OnClickListener oclbtnRemove = new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onClick(View v) {
+                int size = adapter.getCount();
+
+                List<String> removeList = IntStream.range(0, size)
+                        .filter(i -> listView.isItemChecked(i))
+                        .mapToObj(adapter::getItem)
+                        .collect(Collectors.toList());
+
+                names.removeAll(removeList);
+                for(int i = 0; i<size; i++)
+                {
+                    listView.setItemChecked(i, false);
+                }
+                adapter.notifyDataSetChanged();
+            }
+        };
 
         btnAdd.setOnClickListener(oclbtnAdd);
         btnSelect.setOnClickListener(oclbtnSelect);
         btnCancel.setOnClickListener(oclbtnCancel);
         btnToast.setOnClickListener(oclbtnToast);
+        btnRemove.setOnClickListener(oclbtnRemove);
         listView.setAdapter(adapter);
     }
+    /*
+    View.OnClickListener oclbtnRemove = new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onClick(View v) {
+                int size = adapter.getCount();
+
+                List<String> removeList = IntStream.range(0, size)
+                        .filter(i -> listView.isItemChecked(i))
+                        .mapToObj(adapter::getItem)
+                        .collect(Collectors.toList());
+
+                names.removeAll(removeList);
+                for(int i = 0; i<size; i++)
+                {
+                    listView.setItemChecked(i, false);
+                }
+                adapter.notifyDataSetChanged();
+            }
+        };
+     */
 }

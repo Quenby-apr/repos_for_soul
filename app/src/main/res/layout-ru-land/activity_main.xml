@@ -13,13 +13,13 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="150dp"
         android:layout_weight="1">
 
         <ListView
             android:id="@+id/listView"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
+            android:layout_height="150dp"
             android:backgroundTint="@color/orange"
             android:layout_weight="1"
             android:background="@drawable/my_button" />
@@ -40,18 +40,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
-                android:layout_marginBottom="30dp"
+
                 android:backgroundTint="@color/red"
-                android:text="button 1" />
+                android:text="select all text" />
 
             <Button
                 android:id="@+id/buttonCancel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/red"
-                android:layout_marginBottom="30dp"
                 android:layout_weight="0"
-                android:text="button" />
+                android:text="remove selection" />
 
             <Button
                 android:id="@+id/buttonToast"
@@ -59,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/red"
                 android:layout_weight="0"
-                android:text="button" />
+                android:text="display text" />
         </LinearLayout>
 
     </LinearLayout>
@@ -75,8 +74,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:layout_height="50dp"
         android:orientation="horizontal">
 
         <EditText
@@ -99,5 +97,13 @@
             android:layout_weight="1"
             android:text="Add" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonRemove"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/red"
+        android:text="Remove element"
+        tools:ignore="NestedWeights" />
 
 </LinearLayout>
