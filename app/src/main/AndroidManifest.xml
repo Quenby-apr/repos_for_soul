@@ -10,9 +10,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Lab_1">
         <activity
+            android:name=".FiltredListActivity"
+            android:exported="true" />
+        <activity
             android:name=".MainActivity"
-            android:windowSoftInputMode="stateHidden"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

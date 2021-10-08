@@ -3,13 +3,14 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.3828125" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/drawable/my_button.xml" value="0.3828125" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/layout-land/activity_main.xml" value="0.31040564373897706" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/layout-ru-land/activity_main.xml" value="0.33" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/layout-ru-v26/activity_main.xml" value="0.36666666666666664" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/layout-ru/activity_main.xml" value="0.36666666666666664" />
-        <entry key="..\:/Mobile labs/lab_1/app/src/main/res/layout/activity_main.xml" value="0.35260416666666666" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout-land/activity_main.xml" value="0.17063492063492064" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout-ru-land/activity_main.xml" value="0.31040564373897706" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout-ru/activity_main.xml" value="0.2957427536231884" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout/activity_filtred_list.xml" value="0.2957427536231884" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout/activity_main.xml" value="0.2957427536231884" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout/fragment_add_item.xml" value="0.2015625" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout/fragment_element.xml" value="0.19791666666666666" />
+        <entry key="..\:/Users/Vlad/Desktop/repos_for_soul/app/src/main/res/layout/fragment_main.xml" value="0.2015625" />
       </map>
     </option>
   </component>
