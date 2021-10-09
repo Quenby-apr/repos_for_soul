@@ -15,11 +15,33 @@
         />
 
     <EditText
-        android:id="@+id/elementTextField"
+        android:id="@+id/elementTextFieldName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:autofillHints="name"
         />
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:text="Число элемента"
+        />
+
+    <EditText
+        android:id="@+id/elementTextFieldNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autofillHints="name"
+        />
+
+    <CheckBox
+        android:id="@+id/checkBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:text="Логическая переменная" />
+
     <Button
         android:id="@+id/buttonOk"
         android:layout_width="match_parent"

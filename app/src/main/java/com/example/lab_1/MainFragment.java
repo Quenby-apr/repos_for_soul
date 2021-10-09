@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.IOException;
+
 public class MainFragment extends Fragment {
     IListFunction listFunction;
 
@@ -24,7 +26,13 @@ public class MainFragment extends Fragment {
         ((Button) (inf.findViewById(R.id.buttonRemove))).setOnClickListener(view -> listFunction.Delete());
         Button btnSearch = inf.findViewById(R.id.buttonSearch);
         btnSearch.setOnClickListener(view -> listFunction.Search());
-        //((Button) (inf.findViewById(R.id.buttonSearch))).setOnClickListener(view -> listFunction.Search( ((TextView) inf.findViewById(R.id.textField)).getText().toString()));
+        ((Button) (inf.findViewById(R.id.buttonLoad))).setOnClickListener(view -> {
+            try {
+                listFunction.LoadDataJson();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         return inf;
     }
 

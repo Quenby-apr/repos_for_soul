@@ -35,5 +35,11 @@
         android:layout_height="wrap_content"
         android:backgroundTint="@color/blue"
         android:text="Поиск" />
+    <Button
+        android:id="@+id/buttonLoad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/blue"
+        android:text="Загрузка из Json" />
 
 </LinearLayout>

@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -22,7 +23,19 @@ public class ElementFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_element, null);
         Commands command = (Commands) getArguments().getSerializable("command");
         Button btnOk = v.findViewById(R.id.buttonOk);
-        btnOk.setOnClickListener(view -> listFunction.Ok(command,((EditText) v.findViewById(R.id.elementTextField)).getText().toString()));
+        btnOk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                double number;
+                try {
+                    number = Double.parseDouble(((EditText) v.findViewById(R.id.elementTextFieldNumber)).getText().toString());
+                }
+                catch(Exception e) {
+                    number = 0;
+                }
+                listFunction.Ok(command, ((EditText) v.findViewById(R.id.elementTextFieldName)).getText().toString(), number, ((CheckBox) v.findViewById(R.id.checkBox)).isChecked());
+            }
+        });
         Button btnCancel = v.findViewById(R.id.buttonCancel);
         btnCancel.setOnClickListener(view -> getActivity().getFragmentManager().popBackStack());
         return v;
