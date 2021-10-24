@@ -40,6 +40,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/blue"
-        android:text="Загрузка из Json" />
+        android:text="Загрузить данные" />
 
 </LinearLayout>

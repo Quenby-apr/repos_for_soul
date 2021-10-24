@@ -28,7 +28,7 @@ public class MainFragment extends Fragment {
         btnSearch.setOnClickListener(view -> listFunction.Search());
         ((Button) (inf.findViewById(R.id.buttonLoad))).setOnClickListener(view -> {
             try {
-                listFunction.LoadDataJson();
+                listFunction.LoadData();
             } catch (IOException e) {
                 e.printStackTrace();
             }

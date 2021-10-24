@@ -37,14 +37,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import business_logic.binding_models.MyObjectBindingModel;
+import business_logic.business_logics.MyObjectLogic;
+import business_logic.interfaces.IObjectStorage;
+import business_logic.view_models.MyObjectViewModel;
+import database_implement.MyObjectStorage;
+
 
 public class MainActivity extends AppCompatActivity implements IListFunction{
     MainFragment mainFragment;
     ElementFragment elementFragment;
-    ArrayList<MyObject> myObjects= new ArrayList<MyObject>();
+    ArrayList<MyObjectViewModel> myObjects;
+    private int editableItemId = -1;
+    private final int DB_VERSION = 1;
+    private MyObjectLogic myObjectLogic = null;
+    private IObjectStorage myObjectStorage = null;
+    private boolean storage;
+    private boolean dataFromDatabase;
     ListView listView;
-    ArrayAdapter<MyObject> adapter;
-    public static List<String> names = new ArrayList<String>(Arrays.asList("Курс по русскому", "Курс по математике", "Курс по физике", "Курс по английскому", "Курс по химии", "Курс по информатике"));;
+    ArrayAdapter<MyObjectViewModel> adapter;
     private final String xml_objects_tag = "objects";
     private final String xml_object_tag = "object";
     private final String xml_name_tag = "name";
@@ -69,118 +80,21 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         listView = findViewById(R.id.listView);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
-        loadData();
     }
-
-    private void saveData() {
-        if (adapter == null) return;
-        try ( BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(openFileOutput("listData.xml", MODE_PRIVATE)))){
-            XmlSerializer xmlSerializer = Xml.newSerializer();
-            StringWriter writer = new StringWriter();
-            xmlSerializer.setOutput(writer);
-            xmlSerializer.startDocument("UTF-8", true);
-            xmlSerializer.startTag(null, xml_objects_tag);
-            for (int i = 0; i < myObjects.size(); i++) {
-                xmlSerializer.startTag(null, xml_object_tag);
-                xmlSerializer.startTag(null, xml_name_tag);
-                xmlSerializer.text(myObjects.get(i).getName());
-                xmlSerializer.endTag(null, xml_name_tag);
-                xmlSerializer.startTag(null, xml_number_tag);
-                xmlSerializer.text(String.valueOf(myObjects.get(i).getNumber()));
-                xmlSerializer.endTag(null, xml_number_tag);
-                xmlSerializer.startTag(null, xml_logic_tag);
-                xmlSerializer.text(String.valueOf(myObjects.get(i).isLogic()));
-                xmlSerializer.endTag(null, xml_logic_tag);
-                xmlSerializer.endTag(null, xml_object_tag);
-            }
-            xmlSerializer.endTag(null, xml_objects_tag);
-            xmlSerializer.endDocument();
-            xmlSerializer.flush();
-            bufferedWriter.write(writer.toString());
-        } catch (IllegalArgumentException | IllegalStateException | IOException e) {
-            e.printStackTrace();
+    public void onResume() {
+        super.onResume();
+        Bundle arguments = getIntent().getExtras();
+        if (arguments !=null) {
+            String st = arguments.get("storage").toString();
+            myObjectStorage = st.equals("DB") ? new MyObjectStorage(this, DB_VERSION) : new file_implement.MyObjectStorage(this);
+            myObjectLogic = new MyObjectLogic(myObjectStorage);
+            loadData();
         }
     }
 
     public void loadData() {
         if (listView == null) return;
-        String data = null;
-        try {
-            FileInputStream fis = getApplicationContext().openFileInput("listData.xml");
-            InputStreamReader isr = new InputStreamReader(fis);
-            char[] inputBuffer = new char[fis.available()];
-            isr.read(inputBuffer);
-            data = new String(inputBuffer);
-            isr.close();
-            fis.close();
-        } catch (FileNotFoundException e3) {
-            e3.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
-            // включаем поддержку namespace (по умолчанию выключена)
-            factory.setNamespaceAware(true);
-            // создаем парсер
-            XmlPullParser xpp = factory.newPullParser();
-            // даем парсеру на вход Reader
-            if (!TextUtils.isEmpty(data)) {
-                xpp.setInput(new StringReader(data));
-
-                MyObject object = null;
-                String value = null;
-                while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
-                    switch (xpp.getEventType()) {
-                        case XmlPullParser.START_TAG:
-                            switch (xpp.getName()) {
-                                case xml_objects_tag: {
-                                    myObjects = new ArrayList<>();
-                                    break;
-                                }
-                                case xml_object_tag: {
-                                    object = new MyObject();
-                                    myObjects.add(object);
-                                    break;
-                                }
-                                default:
-                                    break;
-                            }
-                            break;
-                        case XmlPullParser.END_TAG:
-                            switch (xpp.getName()) {
-                                case xml_name_tag: {
-                                    if (object != null && value != null) object.setName(value);
-                                    break;
-                                }
-                                case xml_number_tag: {
-                                    if (object != null && value != null)
-                                        object.setNumber(Double.parseDouble(value));
-                                    break;
-                                }
-                                case xml_logic_tag:l: {
-                                    if (object != null && value != null)
-                                        object.setLogic(Boolean.parseBoolean(value));
-                                    break;
-                                }
-                            }
-                            break;
-                        case XmlPullParser.TEXT:
-                            value = xpp.getText();
-                            break;
-                        default:
-                            break;
-                    }
-                    // следующий элемент
-                    xpp.next();
-                }
-            }
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        myObjects = myObjectLogic.read(null);
 
         if (myObjects != null) {
             adapter = new ArrayAdapter<>(this,  R.layout.list_items, myObjects);
@@ -192,16 +106,9 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         }
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public void LoadDataJson() throws IOException {
-        myObjects = JsonHelper.importFromJSON(this);
-        if (myObjects != null) {
-            adapter = new ArrayAdapter<>(this, R.layout.list_items, myObjects);
-            listView.setAdapter(adapter);
-            listView.clearChoices();
-            for(int i = 0; i < myObjects.size();i++) {
-                listView.setItemChecked(i, myObjects.get(i).isLogic());
-            }
-        }
+    public void LoadData() throws IOException {
+        Intent intent = chooseActivity(StorageActivity.class);
+        startActivity(intent);
     }
     @Override
     public void Create() {
@@ -230,12 +137,22 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
     public void Delete() {
         int size = adapter.getCount();
 
-        List<MyObject> removeList = IntStream.range(0, size)
+        List<MyObjectViewModel> removeList = IntStream.range(0, size)
                 .filter(i -> listView.isItemChecked(i))
                 .mapToObj(adapter::getItem)
                 .collect(Collectors.toList());
 
         myObjects.removeAll(removeList);
+        for (MyObjectViewModel obj : removeList) {
+            try {
+                myObjectLogic.delete(new MyObjectBindingModel() {{
+                    setId(obj.getId());
+                }});
+                loadData();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         for(int i = 0; i<size; i++)
         {
             listView.setItemChecked(i, false);
@@ -246,25 +163,38 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        saveData();
     }
 
     @Override
     public void Ok(Commands command, String name, double number,boolean logic) {
-        MyObject myObject;
+        MyObjectViewModel myObject;
         switch (command) {
             case Create:
-                myObjects.add(new MyObject(name,number,logic));
+                Integer id = null;
+                try {
+                    myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
+                    });
+                    loadData();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 adapter.notifyDataSetChanged();
                 break;
             case Edit:
-                myObject = new MyObject();
+                myObject = new MyObjectViewModel();
                 myObject.setName(name);
                 myObject.setNumber(number);
                 myObject.setLogic(logic);
                 for (int i = 0; i < adapter.getCount(); i++) {
                     if (listView.isItemChecked(i)){
-                        myObjects.set(i,myObject);
+                        id = adapter.getItem(i).getId();
+                        try {
+                            myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
+                            });
+                            loadData();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
                 adapter.notifyDataSetChanged();
@@ -274,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                 ArrayList<String> list = new ArrayList<String>();
                 for(int i = 0; i<adapter.getCount(); i++)
                 {
-                    if (((MyObject) (adapter.getItem(i))).toString().contains(name)) {
+                    if (((MyObjectViewModel) (adapter.getItem(i))).toString().contains(name)) {
                         list.add(adapter.getItem(i).toString());
                     }
                 }
