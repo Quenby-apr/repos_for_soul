@@ -28,14 +28,6 @@ public class MyObjectLogic {
     }
 
     public void createOrUpdate(MyObjectBindingModel model) throws Exception {
-        MyObjectViewModel obj = iObjectStorage.getElement(new MyObjectBindingModel() {
-            {
-                setId(model.getId());
-            }
-        });
-        if ((obj != null && model.getId() == null) || (obj != null && model.getId() != null && obj.getId() != model.getId())) {
-            throw new Exception("Уже есть элемент с таким названием");
-        }
         if (model.getId() != null) {
             iObjectStorage.update(model);
         } else {

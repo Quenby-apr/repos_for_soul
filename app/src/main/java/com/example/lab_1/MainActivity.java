@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.FragmentTransaction;
+import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -36,7 +37,6 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
     ElementFragment elementFragment;
     fragment_storage fragmentStorage;
     ArrayList<MyObjectViewModel> myObjects;
-    private final int DB_VERSION = 1;
     private MyObjectLogic myObjectLogic = null;
     private IObjectStorage myObjectStorage = null;
     private int editableId = -1;
@@ -103,18 +103,6 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
             });
         });
     }
-
-   /* @RequiresApi(api = Build.VERSION_CODES.O)
-    public void onResume() {
-        super.onResume();
-        Bundle arguments = getIntent().getExtras();
-        if (arguments !=null) {
-            String st = arguments.get("storage").toString();
-            myObjectStorage = st.equals("DB") ? new MyObjectStorage(dbService) : new file_implement.MyObjectStorage(this);
-            myObjectLogic = new MyObjectLogic(myObjectStorage);
-            ex.execute(() -> loadData(mainLooperHandler));
-        }
-    }*/
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void loadData(Handler handler) {
@@ -226,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         for (int i = 0; i < size; i++) {
             listView.setItemChecked(i, false);
         }
+        updateWidget();
     }
 
     @Override
@@ -243,10 +232,9 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         MyObjectViewModel myObject;
         switch (command) {
             case Create:
-                Integer id = null;
                 ex.execute(() -> {
                     try {
-                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
+                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(null, name, number, logic) {
                         });
 
                         loadData(mainLooperHandler);
@@ -254,6 +242,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                         e.printStackTrace();
                     }
                 });
+                updateWidget();
                 break;
             case Edit:
                 myObject = new MyObjectViewModel();
@@ -276,6 +265,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                         });
                     }
                 }
+                updateWidget();
                 break;
             case Search:
                 ex.execute(() -> {
@@ -308,5 +298,17 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         elementFragment.setArguments(bundle);
         ft.commit();
 
+    }
+    public void updateWidget() {
+        AppWidgetManager man = AppWidgetManager.getInstance(this);
+        int[] ids = man.getAppWidgetIds(new ComponentName(this,CountWidget.class));
+
+        int size = myObjectLogic.read(null).size();
+
+        Intent updateIntent = new Intent();
+        updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        updateIntent.putExtra(CountWidget.WIDGET_IDS_KEY, ids);
+        updateIntent.putExtra(CountWidget.WIDGET_DATA_KEY, String.valueOf(size));
+        this.sendBroadcast(updateIntent);
     }
 }

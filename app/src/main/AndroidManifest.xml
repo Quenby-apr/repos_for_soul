@@ -9,6 +9,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Lab_1">
+
+        <receiver
+            android:name=".CountWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/count_widget_info" />
+        </receiver>
+
         <activity
             android:name=".StorageActivity"
             android:exported="true" />
@@ -25,7 +38,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="services.DbService" android:exported="true"/>
+
+        <service
+            android:name="services.DbService"
+            android:exported="true" />
     </application>
 
 </manifest>
