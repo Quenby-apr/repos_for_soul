@@ -11,21 +11,19 @@ import java.util.ArrayList;
 import business_logic.binding_models.MyObjectBindingModel;
 import business_logic.interfaces.IObjectStorage;
 import business_logic.view_models.MyObjectViewModel;
+import services.DbService;
 
 public class MyObjectStorage implements IObjectStorage {
-    private final DbContext dbContext;
-    private SQLiteDatabase db;
+    private final DbService dbService;
 
-    public MyObjectStorage(Context context, int version) {
-        dbContext = new DbContext(context, version);
-        db = dbContext.getReadableDatabase();
+    public MyObjectStorage(DbService dbService) {
+        this.dbService = dbService;
     }
 
     @Override
     public ArrayList<MyObjectViewModel> getFullList() {
-        if (!db.isOpen()) db = dbContext.getReadableDatabase();
         ArrayList<MyObjectViewModel> listObjects;
-        Cursor c = db.query("MyObjects", null, null, null, null, null, null);
+        Cursor c = dbService.read("MyObjects", null, null, null, null, null, null);
         listObjects = new ArrayList<>();
         if (c.moveToFirst()) {
             int idColIndex = c.getColumnIndex("_id");
@@ -48,9 +46,8 @@ public class MyObjectStorage implements IObjectStorage {
 
     @Override
     public ArrayList<MyObjectViewModel> getFilteredList(MyObjectBindingModel model) {
-        if (!db.isOpen()) db = dbContext.getReadableDatabase();
         ArrayList<MyObjectViewModel> listObjects;
-        Cursor c = db.query("MyObjects", null, null, null, null, null, null);
+        Cursor c = dbService.read("MyObjects", null, null, null, null, null, null);
         listObjects = new ArrayList<>();
         if (c.moveToFirst()) {
             int idColIndex = c.getColumnIndex("_id");
@@ -80,12 +77,11 @@ public class MyObjectStorage implements IObjectStorage {
         if (model == null) {
             return null;
         }
-        if (!db.isOpen()) db = dbContext.getReadableDatabase();
         MyObjectViewModel element = null;
         String selection = "";
         if (model.getId() != null) selection = "_id = " + model.getId();
         else if (model.getName() != null) selection = "name = '" + model.getName() + "'";
-        Cursor c = db.query("MyObjects", null, selection, null, null, null, null);
+        Cursor c = dbService.read("MyObjects", null, selection, null, null, null, null);
         if (c.moveToFirst()) {
             int idColIndex = c.getColumnIndex("_id");
             int nameColIndex = c.getColumnIndex("name");
@@ -105,11 +101,7 @@ public class MyObjectStorage implements IObjectStorage {
 
     @Override
     public void insert(MyObjectBindingModel model) {
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
-        db.insert("MyObjects", null, createModel(model));
+        dbService.insert("MyObjects", createModel(model));
     }
 
     @Override
@@ -118,11 +110,7 @@ public class MyObjectStorage implements IObjectStorage {
         if (obj == null) {
             throw new Exception("Элемент не найден");
         }
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
-        db.update("MyObjects", createModel(model), "_id = ?", new String[]{String.valueOf(model.getId())});
+        dbService.update("MyObjects", createModel(model), "_id = ?", new String[]{String.valueOf(model.getId())});
     }
 
     @Override
@@ -131,45 +119,13 @@ public class MyObjectStorage implements IObjectStorage {
         if (obj == null) {
             throw new Exception("Элемент не найден");
         }
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
-        db.delete("MyObjects", "_id = ?", new String[]{String.valueOf(model.getId())});
-    }
-
-    @Override
-    public void deleteAll() {
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
-        db.delete("MyObjects", null, null);
+        dbService.delete("MyObjects", "_id = ?", new String[]{String.valueOf(model.getId())});
     }
 
     @Override
     public void loadDataFromJSON(ArrayList<MyObject> myObjects) {
         if (myObjects == null) return;
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
-        db.beginTransaction();
-        try {
-            for (MyObject obj : myObjects) {
-                if (obj.get_id() > 0 && !TextUtils.isEmpty(obj.getName())) {
-                    ContentValues cv = new ContentValues();
-                    cv.put("_id", obj.get_id());
-                    cv.put("logic", obj.isLogic());
-                    cv.put("name", obj.getName());
-                    cv.put("number", obj.getNumber());
-                    db.insert("MyObjects", null, cv);
-                }
-            }
-            db.setTransactionSuccessful();
-        } finally {
-            db.endTransaction();
-        }
+        dbService.loadDataFromJSON(myObjects);
     }
 
     private ContentValues createModel(MyObjectBindingModel model) {
@@ -181,7 +137,7 @@ public class MyObjectStorage implements IObjectStorage {
     }
 
     @Override
-    public void closure() {
-        dbContext.close();
+    public void closure(){
+        dbService.stopSelf();
     }
 }

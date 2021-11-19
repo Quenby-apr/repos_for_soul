@@ -52,7 +52,6 @@ public class MyObjectLogic {
 
     public void loadDataFromJson(ArrayList<MyObject> objs) {
         if (objs == null) return;
-        iObjectStorage.deleteAll();
         iObjectStorage.loadDataFromJSON(objs);
     }
 }

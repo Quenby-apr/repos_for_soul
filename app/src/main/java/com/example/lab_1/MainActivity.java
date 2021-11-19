@@ -3,37 +3,21 @@ package com.example.lab_1;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.TextUtils;
-import android.util.Log;
-import android.util.SparseBooleanArray;
-import android.util.Xml;
-import android.view.View;
+import android.os.Handler;
+import android.os.IBinder;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-import org.xmlpull.v1.XmlSerializer;
-
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -42,6 +26,7 @@ import business_logic.business_logics.MyObjectLogic;
 import business_logic.interfaces.IObjectStorage;
 import business_logic.view_models.MyObjectViewModel;
 import database_implement.MyObjectStorage;
+import services.DbService;
 
 
 public class MainActivity extends AppCompatActivity implements IListFunction{
@@ -54,16 +39,17 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
     private IObjectStorage myObjectStorage = null;
     private boolean storage;
     private boolean dataFromDatabase;
+    private boolean bound;
     ListView listView;
     ArrayAdapter<MyObjectViewModel> adapter;
-    private final String xml_objects_tag = "objects";
-    private final String xml_object_tag = "object";
-    private final String xml_name_tag = "name";
-    private final String xml_number_tag = "number";
-    private final String xml_logic_tag = "logic";
+    private DbService dbService;
+    private ServiceConnection sConn;
+    private Intent intent;
+    Executor ex;
+    Handler mainLooperHandler;
 
     public Intent chooseActivity (Class param) {
-        Intent intent = new Intent(this, param);
+        intent = new Intent(this, param);
         return intent;
     }
 
@@ -72,43 +58,98 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mainLooperHandler = new Handler(getMainLooper());
+        ex = Executors.newSingleThreadExecutor();
+        intent = new Intent(this, DbService.class);
+        sConn = new ServiceConnection() {
+            public void onServiceConnected(ComponentName name, IBinder binder) {
+                dbService = ((DbService.DbBinder) binder).getService();
+                bound = true;
+                ex.execute(() -> loadData(mainLooperHandler));
+            }
+
+            public void onServiceDisconnected(ComponentName name) {
+                bound = false;
+            }
+        };
+        bindService(intent, sConn, BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
         mainFragment = new MainFragment();
         elementFragment = new ElementFragment();
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.add(R.id.FragmentContainer, mainFragment);
         ft.commit();
+
         listView = findViewById(R.id.listView);
-        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
+        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        listView.setOnItemClickListener((adapterView, view, i, l) -> {
+            ex.execute(() -> {
+                ArrayList<MyObjectViewModel> myObjectsFromData = myObjectLogic.read(new MyObjectBindingModel() {{
+                    setId(myObjects.get(i).getId());
+                }});
+                if (myObjectsFromData != null) {
+                    MyObjectViewModel myObject = myObjectsFromData.get(0);
+                    try {
+                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(myObject.getId(), myObject.getName(), myObject.getNumber(), !myObject.isLogic()));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        });
     }
+
     public void onResume() {
         super.onResume();
         Bundle arguments = getIntent().getExtras();
         if (arguments !=null) {
             String st = arguments.get("storage").toString();
-            myObjectStorage = st.equals("DB") ? new MyObjectStorage(this, DB_VERSION) : new file_implement.MyObjectStorage(this);
+            myObjectStorage = st.equals("DB") ? new MyObjectStorage(dbService) : new file_implement.MyObjectStorage(this);
             myObjectLogic = new MyObjectLogic(myObjectStorage);
-            loadData();
+            ex.execute(() -> loadData(mainLooperHandler));
         }
     }
 
-    public void loadData() {
+    public void loadData(Handler handler) {
         if (listView == null) return;
         myObjects = myObjectLogic.read(null);
 
         if (myObjects != null) {
             adapter = new ArrayAdapter<>(this,  R.layout.list_items, myObjects);
-            listView.setAdapter(adapter);
-            listView.clearChoices();
-            for(int i = 0; i < myObjects.size();i++) {
-                listView.setItemChecked(i, myObjects.get(i).isLogic());
-            }
+            handler.post(() -> {
+                listView.setAdapter(adapter);
+                listView.clearChoices();
+                for(int i = 0; i < myObjects.size();i++) {
+                    listView.setItemChecked(i, myObjects.get(i).isLogic());
+                }
+            });
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void LoadData() throws IOException {
         Intent intent = chooseActivity(StorageActivity.class);
         startActivity(intent);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void LoadDataJson() {
+        ex.execute(() -> {
+            try {
+                ArrayList<MyObject> myObjects = JsonHelper.importFromJSON(this);
+                if (!myObjects.isEmpty()) {
+                    myObjectLogic.loadDataFromJson(myObjects);
+                    ex.execute(() -> loadData(mainLooperHandler));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
     @Override
     public void Create() {
@@ -142,27 +183,32 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                 .mapToObj(adapter::getItem)
                 .collect(Collectors.toList());
 
-        myObjects.removeAll(removeList);
-        for (MyObjectViewModel obj : removeList) {
-            try {
-                myObjectLogic.delete(new MyObjectBindingModel() {{
-                    setId(obj.getId());
-                }});
-                loadData();
-            } catch (Exception e) {
-                e.printStackTrace();
+        ex.execute(() -> {
+            myObjects.removeAll(removeList);
+            for (MyObjectViewModel obj : removeList) {
+                try {
+                    myObjectLogic.delete(new MyObjectBindingModel() {{
+                        setId(obj.getId());
+                    }});
+                    loadData(mainLooperHandler);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        for(int i = 0; i<size; i++)
-        {
-            listView.setItemChecked(i, false);
-        }
-        adapter.notifyDataSetChanged();
+            for (int i = 0; i < size; i++) {
+                listView.setItemChecked(i, false);
+            }
+            adapter.notifyDataSetChanged();
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        myObjectStorage.closure();
+        if (!bound) return;
+        unbindService(sConn);
+        bound = false;
     }
 
     @Override
@@ -171,13 +217,16 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         switch (command) {
             case Create:
                 Integer id = null;
-                try {
-                    myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
-                    });
-                    loadData();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                Integer finalId1 = id;
+                ex.execute(() -> {
+                    try {
+                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(finalId1, name, number, logic) {
+                        });
+                        loadData(mainLooperHandler);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
                 adapter.notifyDataSetChanged();
                 break;
             case Edit:
@@ -188,30 +237,36 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                 for (int i = 0; i < adapter.getCount(); i++) {
                     if (listView.isItemChecked(i)){
                         id = adapter.getItem(i).getId();
-                        try {
-                            myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
-                            });
-                            loadData();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        Integer finalId = id;
+                        ex.execute(() -> {
+                            try {
+                                myObjectLogic.createOrUpdate(new MyObjectBindingModel(finalId, name, number, logic) {
+                                });
+                                loadData(mainLooperHandler);
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
                     }
                 }
                 adapter.notifyDataSetChanged();
                 break;
             case Search:
-                Intent intent = chooseActivity(FiltredListActivity.class);
-                ArrayList<String> list = new ArrayList<String>();
-                for(int i = 0; i<adapter.getCount(); i++)
-                {
-                    if (((MyObjectViewModel) (adapter.getItem(i))).toString().contains(name)) {
+                ex.execute(() -> {
+                    Intent intent = chooseActivity(FiltredListActivity.class);
+                    ArrayList<String> list = new ArrayList<String>();
+                    for(int i = 0; i<adapter.getCount(); i++)
+                    {
+                        if (((MyObjectViewModel) (adapter.getItem(i))).toString().contains(name)) {
                         list.add(adapter.getItem(i).toString());
+                        }
                     }
-                }
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("elems",list);
-                intent.putExtras(bundle);
-                startActivity(intent);
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable("elems",list);
+                    intent.putExtras(bundle);
+                    mainLooperHandler.post(() -> startActivity(intent));
+                    });
                 break;
             default:
                 break;

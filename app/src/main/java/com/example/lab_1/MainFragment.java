@@ -23,6 +23,14 @@ public class MainFragment extends Fragment {
         btnAdd.setOnClickListener(view -> listFunction.Create());
         Button btnEdit = inf.findViewById(R.id.buttonEdit);
         btnEdit.setOnClickListener(view -> listFunction.Edit());
+        Button btnJson = inf.findViewById(R.id.buttonLoadJson);
+        btnJson.setOnClickListener(view -> {
+            try {
+                listFunction.LoadDataJson();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         ((Button) (inf.findViewById(R.id.buttonRemove))).setOnClickListener(view -> listFunction.Delete());
         Button btnSearch = inf.findViewById(R.id.buttonSearch);
         btnSearch.setOnClickListener(view -> listFunction.Search());

@@ -98,12 +98,6 @@ public class MyObjectStorage implements IObjectStorage {
     }
 
     @Override
-    public void deleteAll() {
-        if (source.getMyObjects() == null) return;
-        source.getMyObjects().clear();
-    }
-
-    @Override
     public void loadDataFromJSON(ArrayList<MyObject> myObjects) {
         if (source.getMyObjects() == null || myObjects == null) return;
         source.getMyObjects().addAll(myObjects);

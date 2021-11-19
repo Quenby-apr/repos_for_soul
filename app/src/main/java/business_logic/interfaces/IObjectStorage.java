@@ -20,8 +20,6 @@ public interface IObjectStorage {
 
     void delete(MyObjectBindingModel model) throws Exception;
 
-    void deleteAll();
-
     void loadDataFromJSON(ArrayList<MyObject> myObjects);
 
     void closure();
