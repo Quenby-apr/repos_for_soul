@@ -18,7 +18,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -85,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.add(R.id.FragmentContainer, mainFragment);
         ft.commit();
+
         listView = findViewById(R.id.listView);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setOnItemClickListener((adapterView, view, i, l) -> {
@@ -102,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                 }
             });
         });
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -126,6 +130,11 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         ft.replace(R.id.FragmentContainer, fragmentStorage);
         ft.addToBackStack(null);
         ft.commit();
+        try {
+            syncing();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -163,6 +172,26 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         myObjectStorage = new file_implement.MyObjectStorage(this);
         myObjectLogic = new MyObjectLogic(myObjectStorage);
         ex.execute(() -> loadData(mainLooperHandler));
+    }
+
+    public void syncing() throws Exception {
+        myObjectStorage =  new MyObjectStorage(dbService);
+        myObjectLogic = new MyObjectLogic(myObjectStorage);
+        ArrayList<MyObjectViewModel> objsDB = myObjectLogic.read(null);
+        myObjectStorage = new file_implement.MyObjectStorage(this);
+        myObjectLogic = new MyObjectLogic(myObjectStorage);
+        ArrayList<MyObjectViewModel> objsFile = myObjectLogic.read(null);
+        for (int i=0;i<objsFile.size();i++) {
+            editableId = i;
+            myObjectLogic.delete(new MyObjectBindingModel() {{
+                setId(objsFile.get(editableId).getId());
+            }});
+        }
+        for (int i=0;i<objsDB.size();i++) {
+            editableId = i;
+            myObjectLogic.createOrUpdate(new MyObjectBindingModel(null, objsDB.get(editableId).getName(), objsDB.get(editableId).getNumber(), objsDB.get(editableId).isLogic()) {
+            });
+        }
     }
 
     @Override
