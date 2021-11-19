@@ -21,18 +21,19 @@ import java.util.concurrent.Executors;
 import database_implement.DbContext;
 
 public class DbService extends Service {
-    DbBinder dbBinder = new DbBinder();
+    DbBinder dbBinder;
     private DbContext dbContext;
     private SQLiteDatabase db;
     ExecutorService es;
-    @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return dbBinder;
     }
+    @Override
     public void onCreate() {
         super.onCreate();
-        dbContext = new DbContext(getApplicationContext(), R.integer.DB_VERSION);
+        dbBinder = new DbBinder();
+        dbContext = new DbContext(getApplicationContext(), getResources().getInteger(R.integer.DB_VERSION));
         db = dbContext.getReadableDatabase();
         es = Executors.newFixedThreadPool(2);
     }
@@ -82,14 +83,10 @@ public class DbService extends Service {
         return db.delete(tableName, selection, selectionArgs);
     }
 
-    public void loadDataFromJSON(ArrayList<MyObject> myObjects) {
-        if (myObjects == null) return;
-        if (!db.isOpen()) db = dbContext.getWritableDatabase();
-        else if (db.isReadOnly()) {
-            db = dbContext.getWritableDatabase();
-        }
+    public void loadDataFromJSON(String tableName,ArrayList<MyObject> myObjects) {
         db.beginTransaction();
         try {
+            delete(tableName, null, null);
             for (MyObject obj : myObjects) {
                 if (obj.get_id() > 0 && !TextUtils.isEmpty(obj.getName())) {
                     ContentValues cv = new ContentValues();
@@ -97,7 +94,7 @@ public class DbService extends Service {
                     cv.put("logic", obj.isLogic());
                     cv.put("name", obj.getName());
                     cv.put("number", obj.getNumber());
-                    db.insert("MyObjects", null, cv);
+                    insert(tableName, cv);
                 }
             }
             db.setTransactionSuccessful();

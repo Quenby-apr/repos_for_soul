@@ -3,6 +3,7 @@ package com.example.lab_1;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -11,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import java.io.IOException;
@@ -32,13 +34,12 @@ import services.DbService;
 public class MainActivity extends AppCompatActivity implements IListFunction{
     MainFragment mainFragment;
     ElementFragment elementFragment;
+    fragment_storage fragmentStorage;
     ArrayList<MyObjectViewModel> myObjects;
-    private int editableItemId = -1;
     private final int DB_VERSION = 1;
     private MyObjectLogic myObjectLogic = null;
     private IObjectStorage myObjectStorage = null;
-    private boolean storage;
-    private boolean dataFromDatabase;
+    private int editableId = -1;
     private boolean bound;
     ListView listView;
     ArrayAdapter<MyObjectViewModel> adapter;
@@ -65,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
             public void onServiceConnected(ComponentName name, IBinder binder) {
                 dbService = ((DbService.DbBinder) binder).getService();
                 bound = true;
-                ex.execute(() -> loadData(mainLooperHandler));
             }
 
             public void onServiceDisconnected(ComponentName name) {
@@ -75,17 +75,17 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         bindService(intent, sConn, BIND_AUTO_CREATE);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onStart() {
         super.onStart();
         mainFragment = new MainFragment();
         elementFragment = new ElementFragment();
+        fragmentStorage = new fragment_storage();
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.add(R.id.FragmentContainer, mainFragment);
         ft.commit();
-
         listView = findViewById(R.id.listView);
-        listView.setAdapter(adapter);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setOnItemClickListener((adapterView, view, i, l) -> {
             ex.execute(() -> {
@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         });
     }
 
+   /* @RequiresApi(api = Build.VERSION_CODES.O)
     public void onResume() {
         super.onResume();
         Bundle arguments = getIntent().getExtras();
@@ -113,10 +114,13 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
             myObjectLogic = new MyObjectLogic(myObjectStorage);
             ex.execute(() -> loadData(mainLooperHandler));
         }
-    }
+    }*/
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public void loadData(Handler handler) {
-        if (listView == null) return;
+        if (listView == null)
+            return;
+
         myObjects = myObjectLogic.read(null);
 
         if (myObjects != null) {
@@ -124,21 +128,26 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
             handler.post(() -> {
                 listView.setAdapter(adapter);
                 listView.clearChoices();
-                for(int i = 0; i < myObjects.size();i++) {
-                    listView.setItemChecked(i, myObjects.get(i).isLogic());
-                }
             });
         }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void LoadData() throws IOException {
-        Intent intent = chooseActivity(StorageActivity.class);
-        startActivity(intent);
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        ft.replace(R.id.FragmentContainer, fragmentStorage);
+        ft.addToBackStack(null);
+        ft.commit();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void LoadDataJson() {
+        if(listView.getCount()>0) {
+            for (int i = 0; i < listView.getCount(); i++) {
+                listView.setItemChecked(i, true);
+            }
+            Delete();
+        }
         ex.execute(() -> {
             try {
                 ArrayList<MyObject> myObjects = JsonHelper.importFromJSON(this);
@@ -151,6 +160,23 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
             }
         });
     }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void SetDB() {
+        myObjectStorage =  new MyObjectStorage(dbService);
+        myObjectLogic = new MyObjectLogic(myObjectStorage);
+        ex.execute(() -> loadData(mainLooperHandler));
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void SetFile() {
+        myObjectStorage = new file_implement.MyObjectStorage(this);
+        myObjectLogic = new MyObjectLogic(myObjectStorage);
+        ex.execute(() -> loadData(mainLooperHandler));
+    }
+
     @Override
     public void Create() {
         FragmentTransaction ft = getFragmentManager().beginTransaction();
@@ -173,6 +199,7 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         ft.commit();
     }
 
+    @SuppressLint("NewApi")
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void Delete() {
@@ -195,11 +222,10 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                     e.printStackTrace();
                 }
             }
-            for (int i = 0; i < size; i++) {
-                listView.setItemChecked(i, false);
-            }
-            adapter.notifyDataSetChanged();
         });
+        for (int i = 0; i < size; i++) {
+            listView.setItemChecked(i, false);
+        }
     }
 
     @Override
@@ -211,23 +237,23 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
         bound = false;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void Ok(Commands command, String name, double number,boolean logic) {
         MyObjectViewModel myObject;
         switch (command) {
             case Create:
                 Integer id = null;
-                Integer finalId1 = id;
                 ex.execute(() -> {
                     try {
-                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(finalId1, name, number, logic) {
+                        myObjectLogic.createOrUpdate(new MyObjectBindingModel(id, name, number, logic) {
                         });
+
                         loadData(mainLooperHandler);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
-                adapter.notifyDataSetChanged();
                 break;
             case Edit:
                 myObject = new MyObjectViewModel();
@@ -236,12 +262,12 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                 myObject.setLogic(logic);
                 for (int i = 0; i < adapter.getCount(); i++) {
                     if (listView.isItemChecked(i)){
-                        id = adapter.getItem(i).getId();
-                        Integer finalId = id;
+                        editableId = adapter.getItem(i).getId();
                         ex.execute(() -> {
                             try {
-                                myObjectLogic.createOrUpdate(new MyObjectBindingModel(finalId, name, number, logic) {
+                                myObjectLogic.createOrUpdate(new MyObjectBindingModel(editableId, name, number, logic) {
                                 });
+                                listView.setItemChecked(editableId, false);
                                 loadData(mainLooperHandler);
 
                             } catch (Exception e) {
@@ -250,7 +276,6 @@ public class MainActivity extends AppCompatActivity implements IListFunction{
                         });
                     }
                 }
-                adapter.notifyDataSetChanged();
                 break;
             case Search:
                 ex.execute(() -> {

@@ -71,6 +71,7 @@ public class MyObjectStorage implements IObjectStorage {
         MyObject obj = new MyObject();
         obj.set_id(maxId);
         source.getMyObjects().add(createModel(model, obj));
+        source.saveObjects();
     }
 
     @Override
@@ -79,6 +80,7 @@ public class MyObjectStorage implements IObjectStorage {
         for (MyObject obj : source.getMyObjects()) {
             if (obj.get_id() == model.getId()) {
                 createModel(model, obj);
+                source.saveObjects();
                 return;
             }
         }
@@ -91,6 +93,7 @@ public class MyObjectStorage implements IObjectStorage {
         for (MyObject obj : source.getMyObjects()) {
             if (obj.get_id() == model.getId()) {
                 source.getMyObjects().remove(obj);
+                source.saveObjects();
                 return;
             }
         }

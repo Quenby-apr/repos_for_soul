@@ -125,7 +125,7 @@ public class MyObjectStorage implements IObjectStorage {
     @Override
     public void loadDataFromJSON(ArrayList<MyObject> myObjects) {
         if (myObjects == null) return;
-        dbService.loadDataFromJSON(myObjects);
+        dbService.loadDataFromJSON("MyObjects",myObjects);
     }
 
     private ContentValues createModel(MyObjectBindingModel model) {

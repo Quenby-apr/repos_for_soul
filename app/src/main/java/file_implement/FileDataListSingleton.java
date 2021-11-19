@@ -33,7 +33,7 @@ public class FileDataListSingleton {
         return result == null ? new ArrayList<>() : result;
     }
 
-    private void saveObjects() {
+    public void saveObjects() {
         XMLSerialization.saveData(context, filename, myObjects);
     }
 
